@@ -158,6 +158,7 @@ bound.
   `pytest` for routes, compose plus smoke for the image, kind plus smoke for
   the manifests. If this grew a database or a queue, that middle layer would
   be worth having.
+- **No External Service exposed** the smoke calls to the application through port-forwarding mechanism. No ExternalService(NodePort/LB) setup. For this size of setup, it builds no thing. Worth implementing with proper templating in kustomize or helm, controlling how we expose the service to external use based on the environment.
 
 ### Application
 
