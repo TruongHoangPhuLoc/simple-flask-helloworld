@@ -12,6 +12,11 @@ on a local kind cluster.
 | `GET /healthz` | liveness — is the server still answering |
 | `GET /readyz` | readiness — should this pod get traffic |
 
+`GET /` returns JSON rather than plain text. The brief asked for a response
+containing `Hello, World!` and a build identifier; JSON makes the identifier
+machine-readable so the smoke test can assert it. The literal string is still
+in the body.
+
 ```
 $ curl -s localhost:8080/
 {"build_time":"2026-08-09T00:00:00Z","message":"Hello, World!","version":"abc1234"}
@@ -72,14 +77,35 @@ kubelet does not restart the pod mid-drain.
 `test` job: ruff, pytest, `pip-audit` on the dependencies.
 `e2e` job: build, Trivy scan on the image, kind cluster, load, deploy, smoke.
 
-The dependency scan runs before the build because there is no image to scan
-yet; the image scan runs after, because base image CVEs only exist once the
-image exists.
+2 scans, one for the codebase, one for the artifact after building. 
 
 ## Not opted in
 
 Things I left out on purpose. They are worth doing in a real setup, they just
 buy nothing at this size.
+
+### Deployment configuration
+
+In Q4 I argued for topology spread, a PodDisruptionBudget and a tuned HPA.
+None of that is here. That is proportionality, not inconsistency -- Q4 is a
+critical-path API with a broker behind it, this is a stateless hello-world
+with no dependencies.
+
+| Left out | Would add when |
+|---|---|
+| HPA | there is real traffic and a measured latency/utilisation curve. Autoscaling on an invented target is worse than a fixed replica count |
+| PodDisruptionBudget | the service has an availability target that node drains could breach |
+| topologySpreadConstraints | more than one node or zone actually exists and an outage matters |
+| Ingress / TLS | something outside the cluster needs to reach it. Right now nothing does |
+| Kustomize or Helm | more than one environment, or more than one value that varies. Today it is one image tag, and `kubectl set image` is honest about that |
+
+Kept anyway, because they cost nothing and their absence is a real defect:
+separate liveness and readiness probes, resource requests, non-root, a
+namespace.
+
+No CPU limit, memory limit set -- same reasoning as Q4. CPU limits throttle
+and show up as tail latency; memory is incompressible so its limit is a real
+bound.
 
 ### Build
 
@@ -87,6 +113,7 @@ buy nothing at this size.
   CI time. Not worth the configuration for a build this small.
 - **No multi-platform builds.** Single architecture only. amd64/arm64 matters
   once the image runs somewhere other than one laptop and one runner.
+- **No Tooling Scans** no tooling scans for quality integrated into the solution such as SonarQube before building artifact.
 
 ### Delivery
 
@@ -115,6 +142,35 @@ buy nothing at this size.
   has to run `kubectl rollout undo`. A real setup wires that to the failed
   rollout automatically, or to a health signal after it.
 
+### Cost control
+- **Infrastucture** is simple, compabible with single docker host or simple cluster kind, no external dependencies, no IaC workflow wired in. In some cases, when cost control needed, a solution to provision the IaC terraform can be wired in before the application workflow and tearing them down after tests passed. 
+
+### Testing
+
+- **No mocked integration tests.** There are no external dependencies, so a
+  mock-based layer would be testing the mock. The real integration surfaces
+  are the container booting and the manifests applying, and both are covered:
+  `pytest` for routes, compose plus smoke for the image, kind plus smoke for
+  the manifests. If this grew a database or a queue, that middle layer would
+  be worth having.
+
+### Application
+
+- **No structured logging or metrics endpoint.** gunicorn access logs to
+  stdout only. A `/metrics` endpoint would be the next thing I added.
+- **Image signing and SBOM** (cosign, syft). Right call for a real supply
+  chain, not for an exercise this size.
+- **Worker count is a guess.** `--workers 2 --threads 4` with no load test
+  behind it. Should come from the CPU request and a measured profile.
+- **Version is the short SHA.** Fine for traceability. A release would want a
+  semantic version alongside it.
+- **Graceful shutdown is partly the application's job.** `/readyz` flips to
+  503 on SIGTERM so the pod leaves the Service endpoints; gunicorn drains the
+  in-flight requests. No `preStop` hook -- for a stateless service with no
+  in-flight work beyond the current request, the default 30s grace period is
+  enough.
+
+
 ## Layout
 
 ```
@@ -126,5 +182,3 @@ k8s/manifests.yaml     Namespace, Deployment, Service
 scripts/smoke.sh       endpoint + version assertions
 Makefile               up / kind / smoke / test
 ```
-
-See `TRADEOFFS.md` for what was left out and why.

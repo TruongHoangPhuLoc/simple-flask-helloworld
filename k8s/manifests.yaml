@@ -1,6 +1,6 @@
 # Deliberately minimal. This is a stateless hello-world, not the critical-path
-# API from Q4 -- no HPA, no PDB, no topology spread. See TRADEOFFS.md for why
-# those are left out here even though I argued for them there.
+# API from Q4 -- no HPA, no PDB, no topology spread. See the README ("Not
+# opted in") for why those are left out even though I argued for them there.
 ---
 apiVersion: v1
 kind: Namespace
