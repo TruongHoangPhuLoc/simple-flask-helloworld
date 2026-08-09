@@ -16,6 +16,10 @@ concurrency:
 
 env:
   IMAGE: simple-flask-helloworld
+  # Names used by more than one step live here. Repeating a literal is how the
+  # cluster ended up created as one name and loaded into under another.
+  KIND_CLUSTER: simple-flask-helloworld
+  K8S_NAMESPACE: hello
 
 jobs:
   test:
@@ -72,31 +76,31 @@ jobs:
       - name: Create kind cluster
         uses: helm/kind-action@a1b0e391336a6ee6713a0583f8c6240d70863de3 # v1.12.0
         with:
-          cluster_name: hello
+          cluster_name: ${{ env.KIND_CLUSTER }}
 
       # No registry in the loop, so the image has to be loaded into the
       # cluster. Without this the pod sits in ErrImagePull.
       - name: Load image into kind
-        run: kind load docker-image ${IMAGE_REF} --name simple-flask-helloworld
+        run: kind load docker-image ${IMAGE_REF} --name ${KIND_CLUSTER}
 
       - name: Deploy
         run: |
           kubectl apply -f k8s/manifests.yaml
-          kubectl -n hello set image deployment/hello hello=${IMAGE_REF}
-          kubectl -n hello rollout status deployment/hello --timeout=120s
+          kubectl -n ${K8S_NAMESPACE} set image deployment/hello hello=${IMAGE_REF}
+          kubectl -n ${K8S_NAMESPACE} rollout status deployment/hello --timeout=120s
 
       # The interesting assertion: the running app must report the commit that
       # triggered this run. Proves the deployed container came from this
       # source, not a stale image that happened to be lying around.
       - name: Smoke test
         run: |
-          kubectl -n hello port-forward svc/hello 8080:80 &
+          kubectl -n ${K8S_NAMESPACE} port-forward svc/hello 8080:80 &
           sleep 5
           EXPECT_VERSION=${SHORT_SHA} ./scripts/smoke.sh
 
       - name: Diagnostics on failure
         if: failure()
         run: |
-          kubectl -n hello get pods -o wide
-          kubectl -n hello describe deployment/hello
-          kubectl -n hello logs -l app=hello --tail=100 || true
+          kubectl -n ${K8S_NAMESPACE} get pods -o wide
+          kubectl -n ${K8S_NAMESPACE} describe deployment/hello
+          kubectl -n ${K8S_NAMESPACE} logs -l app=hello --tail=100 || true
