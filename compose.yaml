@@ -1,0 +1,18 @@
+# Local run. `make up`.
+services:
+  hello:
+    build:
+      context: .
+      args:
+        # Real values come from the Makefile so a local run reports the commit
+        # you actually have checked out.
+        GIT_SHA: ${GIT_SHA:-dev}
+        BUILD_TIME: ${BUILD_TIME:-unknown}
+    image: simple-flask-helloworld:${GIT_SHA:-dev}
+    ports:
+      - "8080:8080"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://localhost:8080/healthz')"]
+      interval: 10s
+      timeout: 2s
+      retries: 3

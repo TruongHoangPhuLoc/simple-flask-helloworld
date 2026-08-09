@@ -1,0 +1,79 @@
+# Deliberately minimal. This is a stateless hello-world, not the critical-path
+# API from Q4 -- no HPA, no PDB, no topology spread. See TRADEOFFS.md for why
+# those are left out here even though I argued for them there.
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: hello
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hello
+  namespace: hello
+  labels:
+    app: hello
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: hello
+  template:
+    metadata:
+      labels:
+        app: hello
+    spec:
+      containers:
+        - name: hello
+          # Overwritten by the Makefile / CI with the real tag. kind loads the
+          # image directly, so it must never try to pull.
+          image: simple-flask-helloworld:dev
+          imagePullPolicy: IfNotPresent
+
+          ports:
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+
+          # Liveness on /healthz, readiness on /readyz. Different endpoints on
+          # purpose: /healthz answers "restart me", /readyz answers "send me
+          # traffic". Pointing both at the same handler loses that.
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+            failureThreshold: 3
+
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: http
+            periodSeconds: 5
+            failureThreshold: 3
+
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              memory: 128Mi
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hello
+  namespace: hello
+  labels:
+    app: hello
+spec:
+  type: ClusterIP
+  selector:
+    app: hello
+  ports:
+    - name: http
+      port: 80
+      targetPort: http
