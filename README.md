@@ -130,13 +130,7 @@ bound.
   you tested is not the thing you shipped, and that is where drift comes from.
 - **No path filtering on CI.** Every push runs the whole pipeline, including
   README-only changes. Filtering is a build-time optimisation and this build is
-  about three minutes, so there is little to win. There is also a trap worth
-  naming: a `paths:` filter at the `on:` level means the workflow never runs at
-  all, so a required status check never reports and the pull request blocks
-  forever. If filtering were worth it here, the safe shape is the one I
-  proposed for the Terraform workflow -- a filter job publishing an output,
-  consumed by a downstream `if:` -- because a skipped job still reports and
-  still satisfies branch protection.
+  about three minutes, so there is little to win.
 - **No GitHub environment reserved for production.** Production should be its
   own environment with required reviewers, separate from anything staging can
   reach.
