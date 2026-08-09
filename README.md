@@ -137,12 +137,6 @@ bound.
   proposed for the Terraform workflow -- a filter job publishing an output,
   consumed by a downstream `if:` -- because a skipped job still reports and
   still satisfies branch protection.
-- **Branch protection is on, review approval is not.** `main` requires both CI
-  jobs green before a merge. That is a repository setting rather than workflow
-  configuration, so it does not appear anywhere in this repo -- but without it
-  "CI must pass" is a convention and not a rule. Required approvals are
-  deliberately left off: single maintainer, and requiring an approval nobody
-  can give would just block the branch.
 - **No GitHub environment reserved for production.** Production should be its
   own environment with required reviewers, separate from anything staging can
   reach.
