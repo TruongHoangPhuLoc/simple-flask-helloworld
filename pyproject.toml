@@ -1,0 +1,9 @@
+# Config lives here so a bare `pytest` and a `python -m pytest` behave the
+# same. `python -m` puts the working directory on sys.path, the console script
+# does not -- which is how `import app` passed locally and failed in CI.
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py312"

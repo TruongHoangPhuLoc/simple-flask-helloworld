@@ -7,19 +7,27 @@ GIT_SHA    ?= $(shell git rev-parse --short=7 HEAD 2>/dev/null || echo dev)$(she
 BUILD_TIME ?= $(shell date -u +%Y-%m-%dT%H:%M:%SZ)
 IMAGE      := simple-flask-helloworld:$(GIT_SHA)
 KIND_CLUSTER ?= simple-flask-helloworld
+VENV       ?= .venv
 
 export GIT_SHA BUILD_TIME
 
-.PHONY: help test lint build up down kind kind-down deploy smoke clean
+.PHONY: help venv test lint build up down kind kind-down deploy smoke clean
 
 help:
 	@grep -E '^[a-z-]+:.*?## ' $(MAKEFILE_LIST) | sed 's/:.*## /\t/'
 
+venv: ## create the dev virtualenv
+	python3 -m venv $(VENV)
+	$(VENV)/bin/pip install -q -r requirements-dev.txt
+
+# Same entrypoints CI uses. `python -m pytest` would also work locally, but it
+# puts the working directory on sys.path and the console script does not --
+# running them differently is what let an import error reach CI.
 test: ## unit tests
-	.venv/bin/python -m pytest -q
+	$(VENV)/bin/pytest -q
 
 lint: ## ruff
-	.venv/bin/ruff check .
+	$(VENV)/bin/ruff check .
 
 build: ## build the image
 	docker build --build-arg GIT_SHA=$(GIT_SHA) --build-arg BUILD_TIME=$(BUILD_TIME) -t $(IMAGE) .
