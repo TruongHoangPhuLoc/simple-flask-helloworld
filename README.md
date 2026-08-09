@@ -76,6 +76,45 @@ The dependency scan runs before the build because there is no image to scan
 yet; the image scan runs after, because base image CVEs only exist once the
 image exists.
 
+## Not opted in
+
+Things I left out on purpose. They are worth doing in a real setup, they just
+buy nothing at this size.
+
+### Build
+
+- **No build cache.** Dependency caching and container layer caching would cut
+  CI time. Not worth the configuration for a build this small.
+- **No multi-platform builds.** Single architecture only. amd64/arm64 matters
+  once the image runs somewhere other than one laptop and one runner.
+
+### Delivery
+
+- **No registry.** CI builds and loads the image straight into kind. A real
+  pipeline pushes to a registry and deploys by digest.
+- **This is a build path, not a delivery path.** No GitOps, no gated review,
+  no production compliance gates. The CD side is deliberately unfinished.
+- **What I would add next:** on merge to main, deploy to staging automatically
+  off the merge event. Run the automated tests against staging after it
+  deploys and report the result. That result is what feeds the decision to
+  promote, whether that decision is manual or automated.
+- **Promotion, not rebuild.** Production should deploy the same artifact that
+  passed staging, not build its own. Rebuilding for production means the thing
+  you tested is not the thing you shipped, and that is where drift comes from.
+- **No GitHub environment reserved for production.** Production should be its
+  own environment with required reviewers, separate from anything staging can
+  reach.
+
+### Safety
+
+- **No automatic rollback.** If a deploy goes bad, nothing reverts it. The only
+  thing limiting the blast radius is the rolling update strategy plus the
+  readiness probe: a broken revision fails readiness, so it never takes over
+  from the working pods and the rollout stalls with the old version still
+  serving. That contains the damage, but it does not undo it -- someone still
+  has to run `kubectl rollout undo`. A real setup wires that to the failed
+  rollout automatically, or to a health signal after it.
+
 ## Layout
 
 ```

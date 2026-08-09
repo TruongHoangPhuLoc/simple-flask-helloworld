@@ -55,10 +55,11 @@ gunicorn's own handling are enough.
 
 ## Not done
 
+Application-level only. Build and delivery omissions are in the README
+("Not opted in").
+
 - **Image signing and SBOM** (cosign, syft). Right call for a real supply
   chain, not for a 2-hour exercise. Would be the first thing I added.
-- **No registry push.** CI builds and `kind load`s the image. A real pipeline
-  pushes to a registry and deploys by digest, which is what I argued for in Q3.
 - **No structured logging or metrics endpoint.** gunicorn access logs to
   stdout only. A `/metrics` endpoint would be the next addition, before
   anything else on this list.
