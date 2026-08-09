@@ -77,7 +77,9 @@ kubelet does not restart the pod mid-drain.
 `test` job: ruff, pytest, `pip-audit` on the dependencies.
 `e2e` job: build, Trivy scan on the image, kind cluster, load, deploy, smoke.
 
-2 scans, one for the codebase, one for the artifact after building. 
+There are 2 scans setup
++ The first is for dependencies checks along the unit test before build phrase.
++ The second is for scanning the image after we build artifact successfully.
 
 ## Not opted in
 
