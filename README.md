@@ -128,11 +128,28 @@ bound.
 - **Promotion, not rebuild.** Production should deploy the same artifact that
   passed staging, not build its own. Rebuilding for production means the thing
   you tested is not the thing you shipped, and that is where drift comes from.
+- **No path filtering on CI.** Every push runs the whole pipeline, including
+  README-only changes. Filtering is a build-time optimisation and this build is
+  about three minutes, so there is little to win. There is also a trap worth
+  naming: a `paths:` filter at the `on:` level means the workflow never runs at
+  all, so a required status check never reports and the pull request blocks
+  forever. If filtering were worth it here, the safe shape is the one I
+  proposed for the Terraform workflow -- a filter job publishing an output,
+  consumed by a downstream `if:` -- because a skipped job still reports and
+  still satisfies branch protection.
+- **Branch protection is on, review approval is not.** `main` requires both CI
+  jobs green before a merge. That is a repository setting rather than workflow
+  configuration, so it does not appear anywhere in this repo -- but without it
+  "CI must pass" is a convention and not a rule. Required approvals are
+  deliberately left off: single maintainer, and requiring an approval nobody
+  can give would just block the branch.
 - **No GitHub environment reserved for production.** Production should be its
   own environment with required reviewers, separate from anything staging can
   reach.
 
 ### Safety
+
+- **No branching and protection stragegy** No policy defined for branching, version control strategy. It can be extended to who can trigger which and do what eg, CI runs on development branch, protect at main, not allow pushing directly, triggering on merged PR, deploy new version to staging (given main is for stag and separate branch for prod)
 
 - **No automatic rollback.** If a deploy goes bad, nothing reverts it. The only
   thing limiting the blast radius is the rolling update strategy plus the
