@@ -78,7 +78,6 @@ kubelet does not restart the pod mid-drain.
 `e2e` job: build, Trivy scan on the image, kind cluster, load, deploy, smoke.
 
 There are 2 scans setup:
-
 - The first is for dependencies checks along the unit test before build phase.
 - The second is for scanning the image after we build artifact successfully.
 
@@ -151,7 +150,7 @@ bound.
   rollout automatically, or to a health signal after it.
 
 ### Cost control
-- **Infrastucture** is simple, compabible with single docker host or simple cluster kind, no external dependencies, no IaC workflow wired in. In some cases, when cost control needed, a solution to provision the IaC terraform can be wired in before the application workflow and tearing them down after tests passed. 
+- **Infrastructure** is simple, compatible with single docker host or simple cluster kind, no external dependencies, no IaC workflow wired in. In some cases, when cost control needed, a solution to provision the IaC terraform can be wired in before the application workflow and tearing them down after tests passed.
 
 ### Testing
 
